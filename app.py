@@ -3,43 +3,39 @@ import requests
 
 app = Flask(__name__)
 
-
-HF_TOKEN = "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"
-
+HF_TOKEN = "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"  
 API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 HEADERS = {
     "Authorization": f"Bearer {HF_TOKEN}"
 }
 
 @app.route('/chat', methods=['POST'])
-@app.route('/chat', methods=['POST'])
 def chat():
-    data = request.get_json()
-    prompt = data.get("prompt", "")
-
-    if not prompt:
-        return jsonify({"response": "Prompt missing."})
-
-    payload = {"inputs": prompt}
-    print(f"Sending to HF: {payload}")
-
     try:
-        response = requests.post(API_URL, headers=HEADERS, json=payload)
-        print(f"Hugging Face raw response: {response.text}")
-        
-        result = response.json()
+        data = request.get_json()
+        prompt = data.get("prompt", "").strip()
 
+        if not prompt:
+            return jsonify({"response": "Please enter a prompt."})
+
+      
+        response = requests.post(API_URL, headers=HEADERS, json={"inputs": prompt})
+        print("HF RAW RESPONSE:", response.text)
+
+        try:
+            result = response.json()
+        except Exception as parse_error:
+            return jsonify({"response": f"HF returned invalid JSON: {parse_error} | Raw: {response.text}"})
+
+        # Return proper reply
         if isinstance(result, list):
-            reply = result[0]["generated_text"][len(prompt):].strip()
-        elif isinstance(result, dict) and "error" in result:
-            reply = f"HF Error: {result['error']}"
+            reply = result[0].get("generated_text", "").replace(prompt, "").strip()
+        elif "error" in result:
+            reply = f"HuggingFace error: {result['error']}"
         else:
-            reply = "Unknown response format."
+            reply = "Unexpected response structure."
+
+        return jsonify({"response": reply})
 
     except Exception as e:
-        reply = f"Server error: {str(e)}"
-
-    return jsonify({"response": reply})
-
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=10000)  # Important: define port for Render
+        return jsonify({"response": f"Server error: {str(e)}"})
