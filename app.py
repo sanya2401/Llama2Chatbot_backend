@@ -1,20 +1,34 @@
 from flask import Flask, request, jsonify
-from transformers import pipeline
+import requests
 
 app = Flask(__name__)
 
-chatbot = pipeline("text-generation", model="gpt2")
+# Replace this with your real HF token
+HF_TOKEN = "hf_YourActualTokenHere"
+
+API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+HEADERS = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
 
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
     prompt = data.get("prompt", "")
-    if not prompt:
-        return jsonify({"response": "Please enter a message."})
 
-    result = chatbot(prompt, max_new_tokens=50, do_sample=True)[0]["generated_text"]
-    reply = result[len(prompt):].strip()
+    payload = {"inputs": prompt}
+    response = requests.post(API_URL, headers=HEADERS, json=payload)
+
+    try:
+        result = response.json()
+        if isinstance(result, list):
+            reply = result[0]["generated_text"][len(prompt):].strip()
+        else:
+            reply = result.get("error", "Sorry, no response.")
+    except Exception as e:
+        reply = f"Error: {str(e)}"
+
     return jsonify({"response": reply})
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0", port=10000)  # Important: define port for Render
