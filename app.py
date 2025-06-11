@@ -12,12 +12,16 @@ HEADERS = {
 }
 
 @app.route('/chat', methods=['POST'])
+@app.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json()
     prompt = data.get("prompt", "")
 
+    print(f"Received prompt: {prompt}")
+
     payload = {"inputs": prompt}
     response = requests.post(API_URL, headers=HEADERS, json=payload)
+    print(f"HuggingFace response: {response.text}")
 
     try:
         result = response.json()
@@ -29,6 +33,7 @@ def chat():
         reply = f"Error: {str(e)}"
 
     return jsonify({"response": reply})
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=10000)  # Important: define port for Render
