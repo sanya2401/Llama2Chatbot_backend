@@ -17,23 +17,29 @@ def chat():
     data = request.get_json()
     prompt = data.get("prompt", "")
 
-    print(f"Received prompt: {prompt}")
+    if not prompt:
+        return jsonify({"response": "Prompt missing."})
 
     payload = {"inputs": prompt}
-    response = requests.post(API_URL, headers=HEADERS, json=payload)
-    print(f"HuggingFace response: {response.text}")
+    print(f"Sending to HF: {payload}")
 
     try:
+        response = requests.post(API_URL, headers=HEADERS, json=payload)
+        print(f"Hugging Face raw response: {response.text}")
+        
         result = response.json()
+
         if isinstance(result, list):
             reply = result[0]["generated_text"][len(prompt):].strip()
+        elif isinstance(result, dict) and "error" in result:
+            reply = f"HF Error: {result['error']}"
         else:
-            reply = result.get("error", "Sorry, no response.")
+            reply = "Unknown response format."
+
     except Exception as e:
-        reply = f"Error: {str(e)}"
+        reply = f"Server error: {str(e)}"
 
     return jsonify({"response": reply})
-
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=10000)  # Important: define port for Render
