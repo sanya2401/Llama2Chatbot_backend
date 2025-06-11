@@ -3,8 +3,8 @@ import requests
 
 app = Flask(__name__)
 
-# Replace this with your real HF token
-HF_TOKEN = "hf_YourActualTokenHere"
+
+HF_TOKEN = "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"
 
 API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 HEADERS = {
